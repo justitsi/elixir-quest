@@ -42,4 +42,20 @@ end
 answers = quadratic.(2, 5, 3)
 
 # IO.puts("Answers are #{answers}") -> doesn't work!
-IO.puts("Answers are #{inspect(answers)}") # works - but why is inspect needed?
+# works - but why is inspect needed?
+IO.puts("Answers are #{inspect(answers)}")
+
+# how to use lists/collections properly
+list =  Enum.to_list(2..4)
+IO.puts("Initial list is #{inspect(list)}")
+
+# prepend - two different ways
+list = [1] ++ list
+list = [0 | list]
+
+IO.puts("Update 1 to list is #{inspect(list)}")
+
+# append - only one way?
+list = list ++ [5]
+
+IO.puts("Update 2 to list is #{inspect(list)}")
