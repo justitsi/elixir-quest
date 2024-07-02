@@ -1,6 +1,5 @@
 # create enum
 main = fn ->
-
   chunk_size = 100
   chunk_cnt = 30
 
