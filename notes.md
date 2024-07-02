@@ -14,6 +14,8 @@ Random, unsorted thoughts I've had while working on this project:
 - List concatenation and subtraction operators are really cool
 - Finding lack of for/while loops slightly problematic, but I can see the benefit of not having loops managed by the programmer; This is a high level language for a specific use which is not math and memory tricks :P
 - Wrote a small benchmark (`/syntax/enums.exs`) and did not see any performance difference between `.ex` and `.exs` files.
+- Tutorials on pattern matching (on hexdocs and elixirschool) only show how to use it in interpreter; Had read joyofelixir.com and this (elixirforum post)[https://elixirforum.com/t/recursive-anonymous-functions/18421/3] to figure out how to do anonymous function recursion with pattern matching
+- Recursion seems to be _quite_ slow
 
 ## Error 1
 when printing by index:
