@@ -8,7 +8,7 @@ Random, unsorted thoughts I've had while working on this project:
     - it was the third result! And this is _not_ good because it was by far the most helpful (other options wanted a library which is a turn-off for first-time user)
     - `elixirforum.com` and `stackoverflow.com` came up before it but showed a library solution (`EEx`) instead of a simple language feature (historical reasons?)
 - formatter is _really_ good
-    - Adds nil where needed for me
+    - Adds nil where needed for me in empty functions
 - Arrays are confusing/different than JS and Python where you can just pass them and show them no questions asked (see ##Error 1)
 - Was using a list not an array; When triying to convert got ##Error 2
 - List concatenation and subtraction operators are really cool
@@ -16,6 +16,8 @@ Random, unsorted thoughts I've had while working on this project:
 - Wrote a small benchmark (`/syntax/enums.exs`) and did not see any performance difference between `.ex` and `.exs` files.
 - Tutorials on pattern matching (on hexdocs and elixirschool) only show how to use it in interpreter; Had read joyofelixir.com and this (elixirforum post)[https://elixirforum.com/t/recursive-anonymous-functions/18421/3] to figure out how to do anonymous function recursion with pattern matching
 - Recursion seems to be _quite_ slow
+- Annoying that string to_lowercase and to_uppercase are called something else - what else is named weird?
+- So far I find myself writing a map function when I should be writing a reduction quite often - maybe some more explanation/training on that would be helpful (judging learning elixir)
 
 ## Error 1
 when printing by index:
