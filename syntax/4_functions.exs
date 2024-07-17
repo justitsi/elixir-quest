@@ -33,7 +33,7 @@ is_palindrome = fn word ->
 
   Enum.reduce(indexes, true, fn x, match ->
     char1 = Enum.at(word, x)
-    char2 = Enum.at(word, len_orig-(x+1))
+    char2 = Enum.at(word, len_orig - (x + 1))
 
     if match == true do
       if char1 === char2 do
@@ -47,18 +47,24 @@ is_palindrome = fn word ->
   end)
 end
 
-get_words = fn sentence ->
-  words = String.split(sentence, " ")
-
-  Enum.map(words, fn word ->
+# using & shorthand
+get_words =
+  &Enum.map(String.split(&1, " "), fn word ->
     word = String.downcase(word)
   end)
-end
 
 words = "Hello, how are you feeling today oWo eje heheh Lol"
 
 Enum.map(get_words.(words), fn word ->
   status = is_palindrome.(word)
-
   IO.puts("#{word} palindrome: #{status}")
 end)
+
+# multiple returns
+mult_returns = fn x, y ->
+  {y, x}
+end
+
+{z, q} = mult_returns.([1, 2, 3], [4, 5, 6])
+
+IO.puts("#{inspect(z)} - #{inspect(q)}")

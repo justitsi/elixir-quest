@@ -18,6 +18,13 @@ Random, unsorted thoughts I've had while working on this project:
 - Recursion seems to be _quite_ slow
 - Annoying that string to_lowercase and to_uppercase are called something else - what else is named weird?
 - So far I find myself writing a map function when I should be writing a reduction quite often - maybe some more explanation/training on that would be helpful (judging learning elixir)
+- Enum.map vs Enum.each - one returns and rhe other doesn't
+- I find scope and what is returned by functions sometimes confusing, e.g.: When using a Enum.map in a function call, what is in scope? Can I use func params there? Is this different across module functions and anonymous functions?
+- Why is spacing between function names and brackets mandatory to be zero? Also spacing when using defstruct is weirdly rigid
+- reduce vs reduce_while can be confusing
+- a lot of preference put on more verbose syntax with no immediately obvious benefits:
+    - compile time constants `@hours_in_a_day 24` vs `defp hours_in_a_day(), do: 24`
+- Using `mix` - importing modules is not intuitive, e.g.: I import modules on the top level but then modules don't see each other on the lower level
 
 ## Error 1
 when printing by index:
