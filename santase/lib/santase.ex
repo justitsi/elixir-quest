@@ -39,11 +39,13 @@ defmodule Santase do
     # IO.puts(inspect(deck.cards))
 
     deck = Deck.addToTop(deck, top_cards)
-    IO.puts(inspect(deck))
+    # IO.puts(inspect(deck))
     IO.puts("\n")
 
-    deck = Deck.addToTop(deck, top_cards)
+    deck = Deck.split(deck, 23)
     IO.puts(inspect(deck))
+    # deck = Deck.addToTop(deck, top_cards)
+    # IO.puts(inspect(deck))
 
     Supervisor.start_link [], strategy: :one_for_one
   end

@@ -83,8 +83,14 @@ defmodule Deck do
     end
   end
 
-  # TODO: Implement this
-  def split(_deck, _card_index) do
-    deck
+  def split(deck, card_index) do
+    if card_index >= 0 and card_index < length(deck.cards) do
+      part1 = Enum.slice(deck.cards, 0, card_index)
+      part2 = Enum.slice(deck.cards, card_index, length(deck.cards))
+      new_cards = part2 ++ part1
+      %Deck{deck | cards: new_cards}
+    else
+      {:error, "Split index needs to satisfy 0 <= card_index < length(deck.cards)"}
+    end
   end
 end

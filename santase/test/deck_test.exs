@@ -46,7 +46,7 @@ defmodule DeckTest do
 
       # check cards taken are actually the first ones
       if i > 0 do
-        Enum.each(0..i-1, fn j ->
+        Enum.each(0..(i - 1), fn j ->
           card_top_tmp = Enum.at(top_cards, j)
           card_deck_tmp = Enum.at(deck.cards, j)
 
@@ -64,15 +64,60 @@ defmodule DeckTest do
   end
 
   test "[addToTop] adding cards to deck returns them correctly" do
-    deck = Deck.new()
+    deck_full = Deck.new()
+    cards_to_take = 5
+    {deck, cards} = Deck.takeFromTop(deck_full, cards_to_take)
 
     # check adding cards correctly
-
-
+    deck = Deck.addToTop(deck, cards)
+    assert length(deck.cards) == length(deck_full.cards)
 
     # check adding zero cards
+    deck = Deck.addToTop(deck, [])
+    assert length(deck.cards) == length(deck_full.cards)
 
+    # check adding duplicate cards fails
+    deck = Deck.addToTop(deck, cards)
+    assert deck |> elem(0) == :error
+  end
 
-    # check adding duplicate cards
+  test "[split] splitting deck correctly reorders cards" do
+    deck_full = Deck.new()
+
+    Enum.each(Enum.to_list(1..(length(deck_full.cards) - 1)), fn i ->
+      # check splitting correctly
+      deck = Deck.split(deck_full, i)
+      # check no cards went missing
+      assert length(deck.cards) == length(deck_full.cards)
+      # check first part of deck is still in order
+      Enum.each(Enum.to_list(i..(length(deck_full.cards) - 1)), fn j ->
+        # IO.puts("#{j}  maps to #{j - i}")
+        original_card = Enum.at(deck_full.cards, j)
+        new_pos_card = Enum.at(deck.cards, j - i)
+
+        assert original_card.r == new_pos_card.r
+        assert original_card.s == new_pos_card.s
+      end)
+
+      # check second part of deck is still in order
+      Enum.each(Enum.to_list(0..(i - 1)), fn j ->
+        # IO.puts("#{j}  maps to #{length(deck_full.cards) - i + j}")
+        original_card = Enum.at(deck_full.cards, j)
+        new_pos_card = Enum.at(deck.cards, length(deck_full.cards) - i + j)
+
+        assert original_card.r == new_pos_card.r
+        assert original_card.s == new_pos_card.s
+      end)
+    end)
+
+    # check bad index handling
+    deck = Deck.split(deck_full, -1)
+    assert deck |> elem(0) == :error
+
+    deck = Deck.split(deck_full, length(deck_full.cards))
+    assert deck |> elem(0) == :error
+
+    deck = Deck.split(deck_full, length(deck_full.cards) + 1)
+    assert deck |> elem(0) == :error
   end
 end
