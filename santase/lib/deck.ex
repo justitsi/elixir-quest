@@ -14,6 +14,7 @@ defmodule Deck do
       end)
 
     new_cards = List.flatten(new_cards)
+    new_cards = Enum.reverse(new_cards)
 
     %Deck{cards: new_cards}
   end

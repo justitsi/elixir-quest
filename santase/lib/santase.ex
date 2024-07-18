@@ -1,5 +1,5 @@
 defmodule Santase do
-  require(Deck)
+  require(Game)
 
   @moduledoc """
   Documentation for `Santase`.
@@ -19,33 +19,13 @@ defmodule Santase do
   end
 
   def start(_type, _args) do
-    deck = Deck.new()
-    # IO.puts(inspect(deck))
-    # deck = Deck.shuffle(deck)
-    # IO.puts("\n")
-    # IO.puts(inspect(deck))
-    # IO.puts("\n")
+      game = Game.new("p1", "p2")
+      IO.puts("#{inspect(game)} \n")
 
-    # IO.puts(length(deck.cards))
+      game = Game.startNewRound(game)
+      IO.puts("#{inspect(game)}")
 
-    {deck, top_cards} = Deck.takeFromTop(deck, 3)
 
-    # IO.puts("#{length(deck.cards)}, #{length(top_cards)}")
-
-    # IO.puts("#{inspect(top_cards)}")
-    # IO.puts("\n")
-    # IO.puts(inspect(deck))
-    # IO.puts("\n")
-    # IO.puts(inspect(deck.cards))
-
-    deck = Deck.addToTop(deck, top_cards)
-    # IO.puts(inspect(deck))
-    IO.puts("\n")
-
-    deck = Deck.split(deck, 23)
-    IO.puts(inspect(deck))
-    # deck = Deck.addToTop(deck, top_cards)
-    # IO.puts(inspect(deck))
 
     Supervisor.start_link [], strategy: :one_for_one
   end

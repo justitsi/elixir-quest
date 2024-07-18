@@ -25,6 +25,7 @@ Random, unsorted thoughts I've had while working on this project:
 - a lot of preference put on more verbose syntax with no immediately obvious benefits:
     - compile time constants `@hours_in_a_day 24` vs `defp hours_in_a_day(), do: 24`
 - Using `mix` - importing modules is not intuitive, e.g.: I import modules on the top level but then modules don't see each other on the lower level
+- Should start thinking about copying/reshaping data to make it easier to manipulate instead of doing index matching magic like I would do in C-style programming
 
 ## Error 1
 when printing by index:
