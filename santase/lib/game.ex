@@ -10,11 +10,29 @@ defmodule Game do
   end
 
   def startNewRound(game) do
+    round = Round.new(game.deck, getNextRoundStartingPlayer(game))
+    %Game{game | rounds: [round], deck: nil}
+  end
+
+  def getPlayerOptions(game) do
+    current_round = getCurrentRound(game)
+    %{
+      card_options: Round.getPlayerCardOptions(current_round),
+      premium_options: Round.getPlayerPremiumOptions(current_round),
+      p_turn: current_round.p_turn
+    }
+  end
+
+  def getCurrentRound(game) do
+    Enum.at(game.rounds, 0)
+  end
+
+  def getNextRoundStartingPlayer(game) do
     if length(game.rounds) == 0 do
-      round = Round.new(game.deck, 0)
-      %Game{game | rounds: [round], deck: nil}
+      0
     else
-      # need to handle checking if previous round is finished before creating new one
+      # TODO: make this return the winner of the last round
+      1
     end
   end
 end

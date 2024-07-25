@@ -13,41 +13,82 @@ defmodule Round do
 
   def new(deck, starting_p_index) do
     last_card = Enum.at(deck.cards, -1)
-    IO.puts("#{inspect(last_card)}")
-
     # need to deal cards to players on start
+    # take out all (12) cards to be dealt
+    {deck_new, cards_to_deal} = Deck.takeFromTop(deck, 12)
     # deal order is 3 cards to p_1 -> 3 cards to p_2 -> 3 cards to p_1 -> 3 cards to p_2
-    hand1 = []
-    hand2 = []
+    [a, b, c, d] = Enum.chunk_every(cards_to_deal, 3)
+    p_hands = [a ++ c, b ++ d]
 
-    {deck_new, cards_1_1} = Deck.takeFromTop(deck, 3)
-    {deck_new, cards_2_1} = Deck.takeFromTop(deck, 3)
-    {deck_new, cards_1_2} = Deck.takeFromTop(deck, 3)
-    {deck_new, cards_2_2} = Deck.takeFromTop(deck, 3)
-    hand1 = List.flatten([cards_1_1, cards_1_2])
-    hand2 = List.flatten([cards_2_1, cards_2_2])
+    # need to reverse hands dealt in case p2 is starting
+    p_hands =
+      if starting_p_index > 0 do
+        Enum.reverse(p_hands)
+      else
+        p_hands
+      end
 
     %Round{
-      p_hands: [hand1, hand2],
+      p_hands: p_hands,
       p_turn: starting_p_index,
       trump_suit: last_card.s,
       deck: deck_new
     }
   end
 
-  def getPlayerOptions(round) do
-    if (round.p_turn == 0) do
+  def getPlayerCardOptions(round) do
+    playerCards = Enum.at(round.p_hands, round.p_turn)
 
+    options =
+      if Enum.all?(round.placed_cards, fn x -> x == nil end) do
+        # if there are no placed cards this means that anything can be placed by the current player
+        playerCards
+      else
+        # there is a card on the table so need to see whether we need to respond or can give anything
+        if round.deck_closed or length(round.deck.cards) == 0 do
+          placedCard = Enum.find(round.placed_cards, nil, fn x -> x != nil end)
+          # if there are placed cards need to check if player can respond
+          if Enum.any?(playerCards, fn card -> card.s == placedCard.s end) do
+            Enum.filter(playerCards, fn card -> card.s == placedCard.s end)
+          else
+            # if player doesn't have requested suit they should trump
+            if Enum.any?(playerCards, fn card -> card.s == round.trump_suit end) do
+              Enum.filter(playerCards, fn card -> card.s == round.trump_suit end)
+            else
+              # if player cannot trump they can give anything in their hand
+              playerCards
+            end
+          end
+        else
+          # if there are cards in the deck and it is not closed players can give whatever
+          playerCards
+        end
+      end
+
+    # provide empty card list to the player who does not have the current turn
+    if round.p_turn == 0 do
+      [options, []]
     else
-      []
+      [[], options]
     end
+  end
+
+  def getPlayerPremiumOptions(_round) do
+    [[], []]
+  end
+
+  def getPlayerOtherOptions(_round) do
+    [[], []]
+    # close deck
+    # end game early
+    # swap trump card (last in deck)
   end
 
   def performPlayerMove(_round, _p_index, _move_type) do
     nil
   end
 
-  def getPlayerScore(_round, _p_index) do
+  def getPlayerScores(_round) do
     nil
   end
 end

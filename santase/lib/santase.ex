@@ -19,11 +19,14 @@ defmodule Santase do
   end
 
   def start(_type, _args) do
-      game = Game.new("p1", "p2")
-      IO.puts("#{inspect(game)} \n")
+      # game = Game.new("p1", "p2")
+      # IO.puts("#{inspect(game)} \n")
 
-      game = Game.startNewRound(game)
-      IO.puts("#{inspect(game)}")
+      # game = Game.startNewRound(game)
+      # # IO.puts("#{inspect(game)}")
+
+      # options = Game.getPlayerOptions(game)
+      # IO.puts("#{inspect(options)}")
 
 
 
