@@ -142,10 +142,13 @@ defmodule DeckTest do
         card1 = Enum.at(pair, 0)
         card2 = Enum.at(pair, 1)
 
+        # check cards are sorted correctly in suit order
         assert Deck.indexOf(@valid_suits, card1.s) <= Deck.indexOf(@valid_suits, card2.s)
-        assert Deck.indexOf(@valid_ranks, card1.s) <= Deck.indexOf(@valid_ranks, card2.s)
-      else
-        nil
+
+        # check cards are sorted correctly within suit
+        if (card1.s == card2.s) do
+          assert Deck.indexOf(@valid_ranks, card1.r) <= Deck.indexOf(@valid_ranks, card2.r)
+        end
       end
     end
 
@@ -155,7 +158,7 @@ defmodule DeckTest do
       # make sure no cards disappeared
       assert length(sorted_cards) == length(top_cards)
 
-      # check cards are in order in pairs; need to do this twice
+      # check cards are in order in pairs
       chunks = Enum.chunk_every(sorted_cards, 2)
       Enum.each(chunks, checkPairs)
 
