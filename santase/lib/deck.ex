@@ -94,4 +94,36 @@ defmodule Deck do
       {:error, "Split index needs to satisfy 0 <= card_index < length(deck.cards)"}
     end
   end
+
+  # seriously why is this not a built in func
+  def indexOf(arr, elem) do
+    if not Enum.any?(arr, fn tmp -> tmp == elem end) do
+      nil
+    else
+      Enum.with_index(arr) |> Enum.find(fn {char, index} -> char == elem end) |> elem(1)
+    end
+  end
+
+  def sortCards(cards) do
+    Enum.sort(cards, fn c1, c2 ->
+      # get suit indexes
+      c1_s_i = indexOf(@valid_suits, c1.s)
+      c2_s_i = indexOf(@valid_suits, c2.s)
+
+      if c1_s_i == c2_s_i do
+        c1_r_i = indexOf(@valid_ranks, c1.r)
+        c2_r_i = indexOf(@valid_ranks, c2.r)
+
+        cond do
+          c1_r_i >= c2_r_i -> false
+          c1_r_i < c2_r_i -> true
+        end
+      else
+        cond do
+          c1_s_i > c2_s_i -> false
+          c1_s_i < c2_s_i -> true
+        end
+      end
+    end)
+  end
 end

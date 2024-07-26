@@ -35,7 +35,7 @@ defmodule DeckTest do
   test "[takeFromTop] taking cards from top removes them from deck" do
     deck = Deck.new()
 
-    Enum.map(Enum.to_list(0..length(deck.cards)), fn i ->
+    Enum.each(Enum.to_list(0..length(deck.cards)), fn i ->
       {deck_tmp, top_cards} = Deck.takeFromTop(deck, i)
 
       # check got number of cards requested
@@ -119,5 +119,50 @@ defmodule DeckTest do
 
     deck = Deck.split(deck_full, length(deck_full.cards) + 1)
     assert deck |> elem(0) == :error
+  end
+
+  test "[indexOf] check gets index in list correctly" do
+    to_test = Enum.to_list(1..11)
+
+    # check retrieves element index correctly
+    Enum.each(to_test, fn elem ->
+      assert Deck.indexOf(to_test, elem) == elem - 1
+    end)
+
+    # check handling of non-existed elements
+    assert Deck.indexOf(to_test, -1) == nil
+    assert Deck.indexOf(to_test, 20) == nil
+  end
+
+  test "[sortCards] check provided cards are sorted correctly" do
+    deck = Deck.new() |> Deck.shuffle()
+
+    checkPairs = fn pair ->
+      if (length(pair) == 2) do
+        card1 = Enum.at(pair, 0)
+        card2 = Enum.at(pair, 1)
+
+        assert Deck.indexOf(@valid_suits, card1.s) <= Deck.indexOf(@valid_suits, card2.s)
+        assert Deck.indexOf(@valid_ranks, card1.s) <= Deck.indexOf(@valid_ranks, card2.s)
+      else
+        nil
+      end
+    end
+
+    Enum.each(1..length(deck.cards), fn card_cnt ->
+      {_, top_cards} = Deck.takeFromTop(deck, card_cnt)
+      sorted_cards = Deck.sortCards(top_cards)
+      # make sure no cards disappeared
+      assert length(sorted_cards) == length(top_cards)
+
+      # check cards are in order in pairs; need to do this twice
+      chunks = Enum.chunk_every(sorted_cards, 2)
+      Enum.each(chunks, checkPairs)
+
+      # remove first card in list in order to shift array by one
+      # this allows to check the rest of the card pairings
+      chunks = Enum.chunk_every(Enum.drop(sorted_cards, 1), 2)
+      Enum.each(chunks, checkPairs)
+    end)
   end
 end
