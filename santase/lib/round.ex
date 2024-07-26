@@ -73,8 +73,43 @@ defmodule Round do
     end
   end
 
-  def getPlayerPremiumOptions(_round) do
-    [[], []]
+  def getPlayerPremiumOptions(round) do
+    playerCards = Enum.at(round.p_hands, round.p_turn)
+    playerCards = Deck.sortCards(playerCards)
+
+    options = if (
+      Enum.any?(playerCards, fn card -> card.r == "Q" end)
+      and
+      Enum.any?(playerCards, fn card -> card.r == "K" end)
+      ) do
+        q_cards = Enum.filter(playerCards, fn card -> card.r == "Q" end)
+
+        Enum.map(q_cards, fn q_card ->
+          k_card = Enum.find(playerCards, fn card -> card.r == "K" and card.s == q_card.s end)
+
+          cond do
+            k_card == nil -> nil
+            k_card != nil -> %{cards: [q_card, k_card], points: 0}
+          end
+        end)
+      else
+        []
+    end
+
+    # cleanup results - remove nils and set points
+    options = Enum.filter(options, fn entry -> entry != nil end) |> Enum.map(fn option ->
+      cond do
+        Enum.at(option.cards, 0).s == round.trump_suit -> %{option | points: 40}
+        Enum.at(option.cards, 0).s != round.trump_suit -> %{option | points: 20}
+      end
+    end)
+
+    # provide empty card list to the player who does not have the current turn
+    if round.p_turn == 0 do
+      [options, []]
+    else
+      [[], options]
+    end
   end
 
   def getPlayerOtherOptions(_round) do
