@@ -19,7 +19,8 @@ defmodule Game do
     %{
       card_options: Round.getPlayerCardOptions(current_round),
       premium_options: Round.getPlayerPremiumOptions(current_round),
-      p_turn: current_round.p_turn
+      other_options: Round.getPlayerOtherOptions(current_round),
+      p_turn: Enum.at(game.players, current_round.p_turn)
     }
   end
 
