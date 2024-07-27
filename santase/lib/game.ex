@@ -9,26 +9,26 @@ defmodule Game do
     %Game{players: [Player.new(p1_name), Player.new(p2_name)], deck: deck}
   end
 
-  def startNewRound(game) do
-    round = Round.new(game.deck, getNextRoundStartingPlayer(game))
+  def start_new_round(game) do
+    round = Round.new(game.deck, get_next_round_starting_player(game))
     %Game{game | rounds: [round], deck: nil}
   end
 
-  def getPlayerOptions(game) do
-    current_round = getCurrentRound(game)
+  def get_player_options(game) do
+    current_round = get_current_round(game)
     %{
-      card_options: Round.getPlayerCardOptions(current_round),
-      premium_options: Round.getPlayerPremiumOptions(current_round),
-      other_options: Round.getPlayerOtherOptions(current_round),
+      card_options: Round.get_player_card_options(current_round),
+      premium_options: Round.get_player_premium_options(current_round),
+      other_options: Round.get_player_other_options(current_round),
       p_turn: Enum.at(game.players, current_round.p_turn)
     }
   end
 
-  def getCurrentRound(game) do
+  def get_current_round(game) do
     Enum.at(game.rounds, 0)
   end
 
-  def getNextRoundStartingPlayer(game) do
+  def get_next_round_starting_player(game) do
     if length(game.rounds) == 0 do
       0
     else

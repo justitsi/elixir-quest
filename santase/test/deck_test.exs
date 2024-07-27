@@ -32,11 +32,11 @@ defmodule DeckTest do
     end)
   end
 
-  test "[takeFromTop] taking cards from top removes them from deck" do
+  test "[take_from_top] taking cards from top removes them from deck" do
     deck = Deck.new()
 
     Enum.each(Enum.to_list(0..length(deck.cards)), fn i ->
-      {deck_tmp, top_cards} = Deck.takeFromTop(deck, i)
+      {deck_tmp, top_cards} = Deck.take_from_top(deck, i)
 
       # check got number of cards requested
       assert length(top_cards) == i
@@ -58,26 +58,26 @@ defmodule DeckTest do
     end)
 
     # check handling of requesting more than available cards
-    {deck_tmp, top_cards} = Deck.takeFromTop(deck, length(deck.cards) + 1)
+    {deck_tmp, top_cards} = Deck.take_from_top(deck, length(deck.cards) + 1)
     assert length(top_cards) == length(deck.cards)
     assert length(deck_tmp.cards) == 0
   end
 
-  test "[addToTop] adding cards to deck returns them correctly" do
+  test "[add_to_top] adding cards to deck returns them correctly" do
     deck_full = Deck.new()
     cards_to_take = 5
-    {deck, cards} = Deck.takeFromTop(deck_full, cards_to_take)
+    {deck, cards} = Deck.take_from_top(deck_full, cards_to_take)
 
     # check adding cards correctly
-    deck = Deck.addToTop(deck, cards)
+    deck = Deck.add_to_top(deck, cards)
     assert length(deck.cards) == length(deck_full.cards)
 
     # check adding zero cards
-    deck = Deck.addToTop(deck, [])
+    deck = Deck.add_to_top(deck, [])
     assert length(deck.cards) == length(deck_full.cards)
 
     # check adding duplicate cards fails
-    deck = Deck.addToTop(deck, cards)
+    deck = Deck.add_to_top(deck, cards)
     assert deck |> elem(0) == :error
   end
 
@@ -121,40 +121,40 @@ defmodule DeckTest do
     assert deck |> elem(0) == :error
   end
 
-  test "[indexOf] check gets index in list correctly" do
+  test "[index_of] check gets index in list correctly" do
     to_test = Enum.to_list(1..11)
 
     # check retrieves element index correctly
     Enum.each(to_test, fn elem ->
-      assert Deck.indexOf(to_test, elem) == elem - 1
+      assert Deck.index_of(to_test, elem) == elem - 1
     end)
 
     # check handling of non-existed elements
-    assert Deck.indexOf(to_test, -1) == nil
-    assert Deck.indexOf(to_test, 20) == nil
+    assert Deck.index_of(to_test, -1) == nil
+    assert Deck.index_of(to_test, 20) == nil
   end
 
-  test "[sortCards] check provided cards are sorted correctly" do
+  test "[sort_cards] check provided cards are sorted correctly" do
     deck = Deck.new() |> Deck.shuffle()
 
     checkPairs = fn pair ->
-      if (length(pair) == 2) do
+      if length(pair) == 2 do
         card1 = Enum.at(pair, 0)
         card2 = Enum.at(pair, 1)
 
         # check cards are sorted correctly in suit order
-        assert Deck.indexOf(@valid_suits, card1.s) <= Deck.indexOf(@valid_suits, card2.s)
+        assert Deck.index_of(@valid_suits, card1.s) <= Deck.index_of(@valid_suits, card2.s)
 
         # check cards are sorted correctly within suit
-        if (card1.s == card2.s) do
-          assert Deck.indexOf(@valid_ranks, card1.r) <= Deck.indexOf(@valid_ranks, card2.r)
+        if card1.s == card2.s do
+          assert Deck.index_of(@valid_ranks, card1.r) <= Deck.index_of(@valid_ranks, card2.r)
         end
       end
     end
 
     Enum.each(1..length(deck.cards), fn card_cnt ->
-      {_, top_cards} = Deck.takeFromTop(deck, card_cnt)
-      sorted_cards = Deck.sortCards(top_cards)
+      {_, top_cards} = Deck.take_from_top(deck, card_cnt)
+      sorted_cards = Deck.sort_cards(top_cards)
       # make sure no cards disappeared
       assert length(sorted_cards) == length(top_cards)
 

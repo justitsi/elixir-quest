@@ -16,7 +16,7 @@ defmodule Round do
     last_card = Enum.at(deck.cards, -1)
     # need to deal cards to players on start
     # take out all (12) cards to be dealt
-    {deck_new, cards_to_deal} = Deck.takeFromTop(deck, 12)
+    {deck_new, cards_to_deal} = Deck.take_from_top(deck, 12)
     # deal order is 3 cards to p_1 -> 3 cards to p_2 -> 3 cards to p_1 -> 3 cards to p_2
     [a, b, c, d] = Enum.chunk_every(cards_to_deal, 3)
     p_hands = [a ++ c, b ++ d]
@@ -36,32 +36,32 @@ defmodule Round do
     }
   end
 
-  def getPlayerCardOptions(round) do
-    playerCards = Enum.at(round.p_hands, round.p_turn)
+  def get_player_card_options(round) do
+    player_cards = Enum.at(round.p_hands, round.p_turn)
 
     options =
       if Enum.all?(round.placed_cards, fn x -> x == nil end) do
         # if there are no placed cards this means that anything can be placed by the current player
-        playerCards
+        player_cards
       else
         # there is a card on the table so need to see whether we need to respond or can give anything
         if round.deck_closed or length(round.deck.cards) == 0 do
           placedCard = Enum.find(round.placed_cards, nil, fn x -> x != nil end)
           # if there are placed cards need to check if player can respond
-          if Enum.any?(playerCards, fn card -> card.s == placedCard.s end) do
-            Enum.filter(playerCards, fn card -> card.s == placedCard.s end)
+          if Enum.any?(player_cards, fn card -> card.s == placedCard.s end) do
+            Enum.filter(player_cards, fn card -> card.s == placedCard.s end)
           else
             # if player doesn't have requested suit they should trump
-            if Enum.any?(playerCards, fn card -> card.s == round.trump_suit end) do
-              Enum.filter(playerCards, fn card -> card.s == round.trump_suit end)
+            if Enum.any?(player_cards, fn card -> card.s == round.trump_suit end) do
+              Enum.filter(player_cards, fn card -> card.s == round.trump_suit end)
             else
               # if player cannot trump they can give anything in their hand
-              playerCards
+              player_cards
             end
           end
         else
           # if there are cards in the deck and it is not closed players can give whatever
-          playerCards
+          player_cards
         end
       end
 
@@ -72,17 +72,16 @@ defmodule Round do
     end
   end
 
-  def getPlayerPremiumOptions(round) do
-    playerCards = Enum.at(round.p_hands, round.p_turn)
-    playerCards = Deck.sortCards(playerCards)
+  def get_player_premium_options(round) do
+    player_cards = Enum.at(round.p_hands, round.p_turn) |> Deck.sort_cards()
 
     options =
-      if Enum.any?(playerCards, fn card -> card.r == "Q" end) and
-           Enum.any?(playerCards, fn card -> card.r == "K" end) do
-        q_cards = Enum.filter(playerCards, fn card -> card.r == "Q" end)
+      if Enum.any?(player_cards, fn card -> card.r == "Q" end) and
+           Enum.any?(player_cards, fn card -> card.r == "K" end) do
+        q_cards = Enum.filter(player_cards, fn card -> card.r == "Q" end)
 
         Enum.map(q_cards, fn q_card ->
-          k_card = Enum.find(playerCards, fn card -> card.r == "K" and card.s == q_card.s end)
+          k_card = Enum.find(player_cards, fn card -> card.r == "K" and card.s == q_card.s end)
 
           cond do
             k_card == nil -> nil
@@ -110,14 +109,14 @@ defmodule Round do
     end
   end
 
-  def getPlayerOtherOptions(round) do
+  def get_player_other_options(round) do
     # can only perform game actions when there are no cards on the 'table'
     if Enum.all?(round.placed_cards, fn entry -> entry == nil end) do
       # end game early
       options =
         cond do
-          Enum.at(getPlayerScores(round), round.p_turn) > 66 -> [:end_round]
-          Enum.at(getPlayerScores(round), round.p_turn) <= 66 -> []
+          Enum.at(get_player_scores(round), round.p_turn) > 66 -> [:end_round]
+          Enum.at(get_player_scores(round), round.p_turn) <= 66 -> []
         end
 
       # close deck
@@ -128,9 +127,10 @@ defmodule Round do
         end
 
       # swap trump card (last in deck)
-      playerCards = Enum.at(round.p_hands, round.p_turn)
+      player_cards = Enum.at(round.p_hands, round.p_turn)
+
       options =
-        if Enum.any?(playerCards, fn card -> card.r == "9" and card.s == round.trump_suit end) and
+        if Enum.any?(player_cards, fn card -> card.r == "9" and card.s == round.trump_suit end) and
              length(round.deck.cards) > 2 do
           [:swap_card] ++ options
         else
@@ -146,11 +146,11 @@ defmodule Round do
     end
   end
 
-  def performPlayerMove(_round, _p_index, _move_type) do
+  def perform_player_move(_round, _p_index, _move_type) do
     nil
   end
 
-  def getPlayerScores(round) do
+  def get_player_scores(round) do
     Enum.map(Enum.to_list(0..1), fn p_index ->
       p_pile = Enum.at(round.p_piles, p_index).cards
       p_premium = Enum.at(round.p_premiums, p_index)
@@ -160,7 +160,7 @@ defmodule Round do
     end)
   end
 
-  def getPlayerFinalScores(_round) do
+  def get_player_final_scores(_round) do
     nil
   end
 end
