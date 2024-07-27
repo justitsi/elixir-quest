@@ -3,8 +3,8 @@ defmodule DeckTest do
   doctest Deck
 
   require(Deck)
-  @valid_ranks ["9", "J", "Q", "K", "10", "A"]
-  @valid_suits ["C", "D", "H", "S"]
+  @valid_ranks ~w(9 J Q K 10 A)
+  @valid_suits ~w(C D H S)
 
   test "[new] new deck generation" do
     deck = Deck.new()

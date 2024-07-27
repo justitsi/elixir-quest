@@ -1,7 +1,7 @@
 defmodule Deck do
   require(Card)
-  @valid_ranks ["9", "J", "Q", "K", "10", "A"]
-  @valid_suits ["C", "D", "H", "S"]
+  @valid_ranks ~w(9 J Q K 10 A)
+  @valid_suits ~w(C D H S)
 
   defstruct cards: []
 
