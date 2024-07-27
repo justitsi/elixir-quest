@@ -100,7 +100,7 @@ defmodule Deck do
     if not Enum.any?(arr, fn tmp -> tmp == elem end) do
       nil
     else
-      Enum.with_index(arr) |> Enum.find(fn {char, index} -> char == elem end) |> elem(1)
+      Enum.with_index(arr) |> Enum.find(fn {char, _index} -> char == elem end) |> elem(1)
     end
   end
 
