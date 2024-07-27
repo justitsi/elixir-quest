@@ -42,6 +42,33 @@ defmodule RoundTest do
     end)
   end
 
+  test "[getPlayerScores] calculates player current scores correctly" do
+    round = Round.new(Deck.new(), 0)
+
+    # check initial scores start from [0, 0]
+    assert Round.getPlayerScores(round) == [0, 0]
+
+    # add some cards to player piles and check if they are calculated correctly for both players
+    cards_to_check = [%Card{r: "Q", s: "H", pnts: 4}, %Card{r: "K", s: "D", pnts: 5}]
+
+    round = %Round{round | p_piles: [%Deck{}, %Deck{cards: cards_to_check}]}
+    assert Round.getPlayerScores(round) == [0, 9]
+
+    round = %Round{round | p_piles: [%Deck{cards: cards_to_check}, %Deck{}]}
+    assert Round.getPlayerScores(round) == [9, 0]
+
+    # check calculation when there is premium points as well
+    round = %Round{
+      round
+      | p_premiums: [
+          [%{cards: [%Card{r: "Q", s: "H", pnts: 4}, %Card{r: "K", s: "H", pnts: 5}], pnts: 20}],
+          []
+        ]
+    }
+
+    assert Round.getPlayerScores(round) == [29, 0]
+  end
+
   test "[getPlayerCardOptions] round gets player options correctly" do
     # check round returns empty option list for player who is not playing
     Enum.each(0..1, fn p_turn ->
@@ -100,39 +127,83 @@ defmodule RoundTest do
     assert Enum.all?(premium_options, fn options -> length(options) == 0 end)
 
     # check Q+K premium for 20 pts - modify round hands so player only has that
-    new_hands = [[%Card{r: "Q", s: "S"}, %Card{r: "K", s: "S"}],[]]
+    new_hands = [[%Card{r: "Q", s: "S"}, %Card{r: "K", s: "S"}], []]
     round = %Round{round | p_hands: new_hands}
     premium_options = Round.getPlayerPremiumOptions(round)
 
     player_premiums = Enum.at(premium_options, 0)
     assert length(player_premiums) == 1
-    assert Enum.at(player_premiums, 0).points == 20
+    assert Enum.at(player_premiums, 0).pnts == 20
     assert Enum.at(Enum.at(player_premiums, 0).cards, 0) == %Card{r: "Q", s: "S"}
     assert Enum.at(Enum.at(player_premiums, 0).cards, 1) == %Card{r: "K", s: "S"}
 
-
-
     # check bad Q+K premium - from different suits - should not be registered as a premium
-    new_hands = [[%Card{r: "Q", s: "S"}, %Card{r: "K", s: "D"}],[]]
+    new_hands = [[%Card{r: "Q", s: "S"}, %Card{r: "K", s: "D"}], []]
     round = %Round{round | p_hands: new_hands}
     premium_options = Round.getPlayerPremiumOptions(round)
     assert length(Enum.at(premium_options, 0)) == 0
 
     # check Q+K premium for 40 pts + multiple premiums + premiums being reported in combos AND sorted suit order
-    new_hands = [[%Card{r: "K", s: "S"}, %Card{r: "Q", s: "C"}, %Card{r: "Q", s: "S"}, %Card{r: "K", s: "C"}],[]]
+    new_hands = [
+      [
+        %Card{r: "K", s: "S"},
+        %Card{r: "Q", s: "C"},
+        %Card{r: "Q", s: "S"},
+        %Card{r: "K", s: "C"}
+      ],
+      []
+    ]
+
     round = %Round{round | p_hands: new_hands}
     premium_options = Round.getPlayerPremiumOptions(round)
 
     player_premiums = Enum.at(premium_options, 0)
     assert length(player_premiums) == 2
 
-    assert Enum.at(player_premiums, 0).points == 40
-    assert Enum.at(player_premiums, 1).points == 20
+    assert Enum.at(player_premiums, 0).pnts == 40
+    assert Enum.at(player_premiums, 1).pnts == 20
 
     assert Enum.at(Enum.at(player_premiums, 0).cards, 0) == %Card{r: "Q", s: "C"}
     assert Enum.at(Enum.at(player_premiums, 0).cards, 1) == %Card{r: "K", s: "C"}
 
     assert Enum.at(Enum.at(player_premiums, 1).cards, 0) == %Card{r: "Q", s: "S"}
     assert Enum.at(Enum.at(player_premiums, 1).cards, 1) == %Card{r: "K", s: "S"}
+  end
+
+  test "[getPlayerOtherOptions] round gets player options correctly" do
+    round = Round.new(Deck.new(), 0)
+
+    # this test only works on un shuffled deck
+    assert round.trump_suit == "C"
+    assert round.p_turn == 0
+
+    # there should only be the option to close the deck at the start
+    other_options = Round.getPlayerOtherOptions(round)
+    assert Enum.at(other_options, 0) == [:close_deck]
+    assert length(Enum.at(other_options, 1)) == 0
+
+    # test the option to end the game early - give p1 a bunch of premiums to meet the threshold of 66
+    round = %Round{
+      round
+      | p_premiums: [
+          [
+            %{cards: [%Card{r: "Q", s: "H", pnts: 4}, %Card{r: "K", s: "H", pnts: 5}], pnts: 20},
+            %{cards: [%Card{r: "Q", s: "D", pnts: 4}, %Card{r: "K", s: "D", pnts: 5}], pnts: 20},
+            %{cards: [%Card{r: "Q", s: "C", pnts: 4}, %Card{r: "K", s: "C", pnts: 5}], pnts: 40}
+          ],
+          []
+        ]
+    }
+    other_options = Round.getPlayerOtherOptions(round)
+    assert Enum.at(other_options, 0) == [:close_deck, :end_round]
+    assert length(Enum.at(other_options, 1)) == 0
+
+
+    # test option to swap out trump card at bottom if player holds 9 of trump
+
+    round = %Round{round | p_hands: [[%Card{r: "9", s: "C"}], []]}
+    other_options = Round.getPlayerOtherOptions(round)
+    assert Enum.at(other_options, 0) == [:swap_card, :close_deck, :end_round]
+    assert length(Enum.at(other_options, 1)) == 0
   end
 end

@@ -3,6 +3,7 @@ defmodule Round do
 
   defstruct p_hands: [[], []],
             p_piles: [%Deck{}, %Deck{}],
+            p_premiums: [[], []],
             p_turn: 0,
             trump_suit: nil,
             deck: nil,
@@ -22,10 +23,9 @@ defmodule Round do
 
     # need to reverse hands dealt in case p2 is starting
     p_hands =
-      if starting_p_index > 0 do
-        Enum.reverse(p_hands)
-      else
-        p_hands
+      cond do
+        starting_p_index == 1 -> Enum.reverse(p_hands)
+        starting_p_index == 0 -> p_hands
       end
 
     %Round{
@@ -66,10 +66,9 @@ defmodule Round do
       end
 
     # provide empty card list to the player who does not have the current turn
-    if round.p_turn == 0 do
-      [options, []]
-    else
-      [[], options]
+    cond do
+      round.p_turn == 0 -> [options, []]
+      round.p_turn == 1 -> [[], options]
     end
   end
 
@@ -77,11 +76,9 @@ defmodule Round do
     playerCards = Enum.at(round.p_hands, round.p_turn)
     playerCards = Deck.sortCards(playerCards)
 
-    options = if (
-      Enum.any?(playerCards, fn card -> card.r == "Q" end)
-      and
-      Enum.any?(playerCards, fn card -> card.r == "K" end)
-      ) do
+    options =
+      if Enum.any?(playerCards, fn card -> card.r == "Q" end) and
+           Enum.any?(playerCards, fn card -> card.r == "K" end) do
         q_cards = Enum.filter(playerCards, fn card -> card.r == "Q" end)
 
         Enum.map(q_cards, fn q_card ->
@@ -89,41 +86,81 @@ defmodule Round do
 
           cond do
             k_card == nil -> nil
-            k_card != nil -> %{cards: [q_card, k_card], points: 0}
+            k_card != nil -> %{cards: [q_card, k_card], pnts: 0}
           end
         end)
       else
         []
-    end
+      end
 
     # cleanup results - remove nils and set points
-    options = Enum.filter(options, fn entry -> entry != nil end) |> Enum.map(fn option ->
-      cond do
-        Enum.at(option.cards, 0).s == round.trump_suit -> %{option | points: 40}
-        Enum.at(option.cards, 0).s != round.trump_suit -> %{option | points: 20}
-      end
-    end)
+    options =
+      Enum.filter(options, fn entry -> entry != nil end)
+      |> Enum.map(fn option ->
+        cond do
+          Enum.at(option.cards, 0).s == round.trump_suit -> %{option | pnts: 40}
+          Enum.at(option.cards, 0).s != round.trump_suit -> %{option | pnts: 20}
+        end
+      end)
 
     # provide empty card list to the player who does not have the current turn
-    if round.p_turn == 0 do
-      [options, []]
-    else
-      [[], options]
+    cond do
+      round.p_turn == 0 -> [options, []]
+      round.p_turn == 1 -> [[], options]
     end
   end
 
-  def getPlayerOtherOptions(_round) do
-    [[], []]
-    # close deck
-    # end game early
-    # swap trump card (last in deck)
+  def getPlayerOtherOptions(round) do
+    # can only perform game actions when there are no cards on the 'table'
+    if Enum.all?(round.placed_cards, fn entry -> entry == nil end) do
+      # end game early
+      options =
+        cond do
+          Enum.at(getPlayerScores(round), round.p_turn) > 66 -> [:end_round]
+          Enum.at(getPlayerScores(round), round.p_turn) <= 66 -> []
+        end
+
+      # close deck
+      options =
+        cond do
+          length(round.deck.cards) > 2 -> [:close_deck] ++ options
+          length(round.deck.cards) <= 2 -> options
+        end
+
+      # swap trump card (last in deck)
+      playerCards = Enum.at(round.p_hands, round.p_turn)
+      options =
+        if Enum.any?(playerCards, fn card -> card.r == "9" and card.s == round.trump_suit end) and
+             length(round.deck.cards) > 2 do
+          [:swap_card] ++ options
+        else
+          options
+        end
+
+      cond do
+        round.p_turn == 0 -> [options, []]
+        round.p_turn == 1 -> [[], options]
+      end
+    else
+      [[], []]
+    end
   end
 
   def performPlayerMove(_round, _p_index, _move_type) do
     nil
   end
 
-  def getPlayerScores(_round) do
+  def getPlayerScores(round) do
+    Enum.map(Enum.to_list(0..1), fn p_index ->
+      p_pile = Enum.at(round.p_piles, p_index).cards
+      p_premium = Enum.at(round.p_premiums, p_index)
+
+      score = Enum.reduce(p_pile, 0, fn card, acc -> card.pnts + acc end)
+      Enum.reduce(p_premium, score, fn premium, acc -> premium.pnts + acc end)
+    end)
+  end
+
+  def getPlayerFinalScores(_round) do
     nil
   end
 end
