@@ -47,16 +47,19 @@ defmodule Round do
         # there is a card on the table so need to see whether we need to respond or can give anything
         if round.deck_closed or length(round.deck.cards) == 0 do
           placedCard = Enum.find(round.placed_cards, nil, fn x -> x != nil end)
+
           # if there are placed cards need to check if player can respond
-          if Enum.any?(player_cards, fn card -> card.s == placedCard.s end) do
-            Enum.filter(player_cards, fn card -> card.s == placedCard.s end)
+          cards_s = Enum.filter(player_cards, fn card -> card.s == placedCard.s end)
+
+          if length(cards_s) > 0 do
+            cards_s
           else
+            cards_t = Enum.filter(player_cards, fn card -> card.s == round.trump_suit end)
             # if player doesn't have requested suit they should trump
-            if Enum.any?(player_cards, fn card -> card.s == round.trump_suit end) do
-              Enum.filter(player_cards, fn card -> card.s == round.trump_suit end)
-            else
-              # if player cannot trump they can give anything in their hand
-              player_cards
+            # if player cannot trump they can give anything in their hand
+            cond do
+              length(cards_t) > 0 -> cards_t
+              length(cards_t) == 0 -> player_cards
             end
           end
         else
@@ -160,7 +163,41 @@ defmodule Round do
     end)
   end
 
-  def get_player_final_scores(_round) do
-    nil
+  def get_player_final_scores(round) do
+    p_scores = get_player_scores(round)
+
+    # only one player won and game is normal (non-early-closed)
+    if round.deck_closer == nil do
+      if Enum.all?(p_scores, fn score -> score > 66 end) do
+        [1, 1]
+      else
+        Enum.map(p_scores, fn score ->
+          cond do
+            score < 33 -> 0
+            score >= 33 and score <= 66 -> 1
+            score > 66 -> 2
+          end
+        end)
+      end
+    else
+      Enum.map(0..1, fn p_index ->
+        p_score = Enum.at(p_scores, p_index)
+        other_p_score = Enum.at(p_scores, rem(p_index + 1, 2))
+
+        if round.deck_closer == p_index do
+          cond do
+            other_p_score >= p_score or p_score <= 66 -> 0
+            p_score > 66 and other_p_score < 66 and other_p_score >= 33 -> 2
+            p_score > 66 and other_p_score < 33 -> 3
+          end
+        else
+          cond do
+            other_p_score <= 66 or p_score > 66 -> 3
+            p_score >= 33 and other_p_score > 66 -> 1
+            p_score < 33 and other_p_score > 66 -> 0
+          end
+        end
+      end)
+    end
   end
 end
