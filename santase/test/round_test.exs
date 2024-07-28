@@ -71,56 +71,38 @@ defmodule RoundTest do
 
   test "[get_player_final_scores] calculates player final scores correctly" do
     round = Round.new(Deck.new(), 0)
-    scores = Round.get_player_final_scores(round)
     # scores at start are always 0:0
-    Enum.each(scores, fn score -> assert score == 0 end)
+    assert Round.get_player_final_scores(round) == [0, 0]
 
     # add however many points we want to test
     round = %Round{round | p_premiums: [[%{pnts: 33}], []]}
-    scores = Round.get_player_final_scores(round)
-    assert Enum.at(scores, 0) == 1
-    assert Enum.at(scores, 1) == 0
+    assert Round.get_player_final_scores(round) == [1, 0]
 
     # add however many points we want to test
     round = %Round{round | p_premiums: [[%{pnts: 67}], []]}
-    scores = Round.get_player_final_scores(round)
-    assert Enum.at(scores, 0) == 2
-    assert Enum.at(scores, 1) == 0
+    assert Round.get_player_final_scores(round) == [2, 0]
 
-     # add however many points we want to test
-     round = %Round{round | p_premiums: [[%{pnts: 67}], [%{pnts: 47}]]}
-     scores = Round.get_player_final_scores(round)
-     assert Enum.at(scores, 0) == 2
-     assert Enum.at(scores, 1) == 1
+    # add however many points we want to test
+    round = %Round{round | p_premiums: [[%{pnts: 67}], [%{pnts: 47}]]}
+    assert Round.get_player_final_scores(round) == [2, 1]
 
     round = %Round{round | p_premiums: [[%{pnts: 66}], [%{pnts: 66}]]}
-    scores = Round.get_player_final_scores(round)
-    Enum.each(scores, fn score -> assert score == 1 end)
+    assert Round.get_player_final_scores(round) == [1, 1]
 
     round = %Round{round | p_premiums: [[%{pnts: 100}], [%{pnts: 100}]]}
-    scores = Round.get_player_final_scores(round)
-    assert Enum.at(scores, 0) == 1
-    assert Enum.at(scores, 1) == 1
+    assert Round.get_player_final_scores(round) == [1, 1]
 
     round = %Round{round | deck_closer: 0}
-    scores = Round.get_player_final_scores(round)
-    assert Enum.at(scores, 0) == 0
-    assert Enum.at(scores, 1) == 3
+    assert Round.get_player_final_scores(round) == [0, 3]
 
     round = %Round{round | p_premiums: [[%{pnts: 100}], [%{pnts: 32}]]}
-    scores = Round.get_player_final_scores(round)
-    assert Enum.at(scores, 0) == 3
-    assert Enum.at(scores, 1) == 0
+    assert Round.get_player_final_scores(round) == [3, 0]
 
     round = %Round{round | p_premiums: [[%{pnts: 67}], [%{pnts: 35}]]}
-    scores = Round.get_player_final_scores(round)
-    assert Enum.at(scores, 0) == 2
-    assert Enum.at(scores, 1) == 1
+    assert Round.get_player_final_scores(round) == [2, 1]
 
     round = %Round{round | p_premiums: [[%{pnts: 67}], [%{pnts: 85}]]}
-    scores = Round.get_player_final_scores(round)
-    assert Enum.at(scores, 0) == 0
-    assert Enum.at(scores, 1) == 3
+    assert Round.get_player_final_scores(round) == [0, 3]
   end
 
   test "[get_player_card_options] round gets player options correctly" do
