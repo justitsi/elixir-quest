@@ -27,7 +27,7 @@ defmodule Deck do
 
   def add_to_top(deck, cards) do
     # check for duplicates
-    combined_list = List.flatten([cards ++ deck.cards])
+    combined_list = cards ++ deck.cards
     unique_list = Enum.uniq(combined_list)
     valid = length(combined_list) == length(unique_list)
 

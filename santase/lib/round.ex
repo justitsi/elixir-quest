@@ -1,9 +1,7 @@
 defmodule Round do
-  require Deck
-
-  defstruct p_hands: [[], []],
-            p_piles: [%Deck{}, %Deck{}],
-            p_premiums: [[], []],
+  defstruct p_hands: {[], []},
+            p_piles: {%Deck{}, %Deck{}},
+            p_premiums: {[], []},
             p_turn: 0,
             trump_suit: nil,
             deck: nil,
@@ -28,6 +26,8 @@ defmodule Round do
         starting_p_index == 0 -> p_hands
       end
 
+    p_hands = List.to_tuple(p_hands)
+
     %Round{
       p_hands: p_hands,
       p_turn: starting_p_index,
@@ -37,7 +37,8 @@ defmodule Round do
   end
 
   def get_player_card_options(round) do
-    player_cards = Enum.at(round.p_hands, round.p_turn)
+    # player_cards = Enum.at(round.p_hands, round.p_turn)
+    player_cards = elem(round.p_hands, round.p_turn)
 
     options =
       if Enum.all?(round.placed_cards, fn x -> x == nil end) do
@@ -76,7 +77,7 @@ defmodule Round do
   end
 
   def get_player_premium_options(round) do
-    player_cards = Enum.at(round.p_hands, round.p_turn) |> Deck.sort_cards()
+    player_cards = elem(round.p_hands, round.p_turn) |> Deck.sort_cards()
 
     options =
       if Enum.any?(player_cards, fn card -> card.r == "Q" end) and
@@ -130,7 +131,7 @@ defmodule Round do
         end
 
       # swap trump card (last in deck)
-      player_cards = Enum.at(round.p_hands, round.p_turn)
+      player_cards = elem(round.p_hands, round.p_turn)
 
       options =
         if Enum.any?(player_cards, fn card -> card.r == "9" and card.s == round.trump_suit end) and
@@ -155,21 +156,22 @@ defmodule Round do
 
   def get_player_scores(round) do
     Enum.map(Enum.to_list(0..1), fn p_index ->
-      p_pile = Enum.at(round.p_piles, p_index).cards
-      p_premium = Enum.at(round.p_premiums, p_index)
+      p_pile = elem(round.p_piles, p_index).cards
+      p_premium = elem(round.p_premiums, p_index)
 
-      score = Enum.reduce(p_pile, 0, fn card, acc -> card.pnts + acc end)
-      Enum.reduce(p_premium, score, fn premium, acc -> premium.pnts + acc end)
+      # both premiums and cards have a pnts field to be reduced
+      Enum.reduce(p_pile ++ p_premium, 0, fn entry, acc -> entry.pnts + acc end)
     end)
   end
 
   def get_player_final_scores(round) do
     p_scores = get_player_scores(round)
 
-    # only one player won and game is normal (non-early-closed)
     if round.deck_closer == nil do
+      # both player won - give them equal score of 1
       if Enum.all?(p_scores, fn score -> score > 66 end) do
         [1, 1]
+        # only one player won and game is normal (non-early-closed)
       else
         Enum.map(p_scores, fn score ->
           cond do
@@ -180,6 +182,7 @@ defmodule Round do
         end)
       end
     else
+      # early closed game - scores of players influence each other
       Enum.map(0..1, fn p_index ->
         p_score = Enum.at(p_scores, p_index)
         other_p_score = Enum.at(p_scores, rem(p_index + 1, 2))

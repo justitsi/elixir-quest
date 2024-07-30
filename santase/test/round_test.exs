@@ -2,10 +2,6 @@ defmodule RoundTest do
   use ExUnit.Case
   doctest Round
 
-  require(Round)
-  require(Deck)
-  require(Card)
-
   test "[new] populates new round struct fields correctly" do
     # check with static unshuffled deck and shuffled deck
     deck_tmp = Deck.new()
@@ -20,18 +16,18 @@ defmodule RoundTest do
 
         round = Round.new(deck, p_index)
         # check deals cards correctly (there's probably a better way to do this)
-        assert Enum.at(deck.cards, 0) == Enum.at(Enum.at(round.p_hands, p_index), 0)
-        assert Enum.at(deck.cards, 1) == Enum.at(Enum.at(round.p_hands, p_index), 1)
-        assert Enum.at(deck.cards, 2) == Enum.at(Enum.at(round.p_hands, p_index), 2)
-        assert Enum.at(deck.cards, 3) == Enum.at(Enum.at(round.p_hands, p2_index), 0)
-        assert Enum.at(deck.cards, 4) == Enum.at(Enum.at(round.p_hands, p2_index), 1)
-        assert Enum.at(deck.cards, 5) == Enum.at(Enum.at(round.p_hands, p2_index), 2)
-        assert Enum.at(deck.cards, 6) == Enum.at(Enum.at(round.p_hands, p_index), 3)
-        assert Enum.at(deck.cards, 7) == Enum.at(Enum.at(round.p_hands, p_index), 4)
-        assert Enum.at(deck.cards, 8) == Enum.at(Enum.at(round.p_hands, p_index), 5)
-        assert Enum.at(deck.cards, 9) == Enum.at(Enum.at(round.p_hands, p2_index), 3)
-        assert Enum.at(deck.cards, 10) == Enum.at(Enum.at(round.p_hands, p2_index), 4)
-        assert Enum.at(deck.cards, 11) == Enum.at(Enum.at(round.p_hands, p2_index), 5)
+        assert Enum.at(deck.cards, 0) == Enum.at(elem(round.p_hands, p_index), 0)
+        assert Enum.at(deck.cards, 1) == Enum.at(elem(round.p_hands, p_index), 1)
+        assert Enum.at(deck.cards, 2) == Enum.at(elem(round.p_hands, p_index), 2)
+        assert Enum.at(deck.cards, 3) == Enum.at(elem(round.p_hands, p2_index), 0)
+        assert Enum.at(deck.cards, 4) == Enum.at(elem(round.p_hands, p2_index), 1)
+        assert Enum.at(deck.cards, 5) == Enum.at(elem(round.p_hands, p2_index), 2)
+        assert Enum.at(deck.cards, 6) == Enum.at(elem(round.p_hands, p_index), 3)
+        assert Enum.at(deck.cards, 7) == Enum.at(elem(round.p_hands, p_index), 4)
+        assert Enum.at(deck.cards, 8) == Enum.at(elem(round.p_hands, p_index), 5)
+        assert Enum.at(deck.cards, 9) == Enum.at(elem(round.p_hands, p2_index), 3)
+        assert Enum.at(deck.cards, 10) == Enum.at(elem(round.p_hands, p2_index), 4)
+        assert Enum.at(deck.cards, 11) == Enum.at(elem(round.p_hands, p2_index), 5)
 
         # check trump suit is determined correctly
         assert round.trump_suit == Enum.at(deck.cards, -1).s
@@ -51,19 +47,19 @@ defmodule RoundTest do
     # add some cards to player piles and check if they are calculated correctly for both players
     cards_to_check = [%Card{r: "Q", s: "H", pnts: 4}, %Card{r: "K", s: "D", pnts: 5}]
 
-    round = %Round{round | p_piles: [%Deck{}, %Deck{cards: cards_to_check}]}
+    round = %Round{round | p_piles: {%Deck{}, %Deck{cards: cards_to_check}}}
     assert Round.get_player_scores(round) == [0, 9]
 
-    round = %Round{round | p_piles: [%Deck{cards: cards_to_check}, %Deck{}]}
+    round = %Round{round | p_piles: {%Deck{cards: cards_to_check}, %Deck{}}}
     assert Round.get_player_scores(round) == [9, 0]
 
     # check calculation when there is premium points as well
     round = %Round{
       round
-      | p_premiums: [
+      | p_premiums: {
           [%{cards: [%Card{r: "Q", s: "H", pnts: 4}, %Card{r: "K", s: "H", pnts: 5}], pnts: 20}],
           []
-        ]
+        }
     }
 
     assert Round.get_player_scores(round) == [29, 0]
@@ -75,33 +71,33 @@ defmodule RoundTest do
     assert Round.get_player_final_scores(round) == [0, 0]
 
     # add however many points we want to test
-    round = %Round{round | p_premiums: [[%{pnts: 33}], []]}
+    round = %Round{round | p_premiums: {[%{pnts: 33}], []}}
     assert Round.get_player_final_scores(round) == [1, 0]
 
     # add however many points we want to test
-    round = %Round{round | p_premiums: [[%{pnts: 67}], []]}
+    round = %Round{round | p_premiums: {[%{pnts: 67}], []}}
     assert Round.get_player_final_scores(round) == [2, 0]
 
     # add however many points we want to test
-    round = %Round{round | p_premiums: [[%{pnts: 67}], [%{pnts: 47}]]}
+    round = %Round{round | p_premiums: {[%{pnts: 67}], [%{pnts: 47}]}}
     assert Round.get_player_final_scores(round) == [2, 1]
 
-    round = %Round{round | p_premiums: [[%{pnts: 66}], [%{pnts: 66}]]}
+    round = %Round{round | p_premiums: {[%{pnts: 66}], [%{pnts: 66}]}}
     assert Round.get_player_final_scores(round) == [1, 1]
 
-    round = %Round{round | p_premiums: [[%{pnts: 100}], [%{pnts: 100}]]}
+    round = %Round{round | p_premiums: {[%{pnts: 100}], [%{pnts: 100}]}}
     assert Round.get_player_final_scores(round) == [1, 1]
 
     round = %Round{round | deck_closer: 0}
     assert Round.get_player_final_scores(round) == [0, 3]
 
-    round = %Round{round | p_premiums: [[%{pnts: 100}], [%{pnts: 32}]]}
+    round = %Round{round | p_premiums: {[%{pnts: 100}], [%{pnts: 32}]}}
     assert Round.get_player_final_scores(round) == [3, 0]
 
-    round = %Round{round | p_premiums: [[%{pnts: 67}], [%{pnts: 35}]]}
+    round = %Round{round | p_premiums: {[%{pnts: 67}], [%{pnts: 35}]}}
     assert Round.get_player_final_scores(round) == [2, 1]
 
-    round = %Round{round | p_premiums: [[%{pnts: 67}], [%{pnts: 85}]]}
+    round = %Round{round | p_premiums: {[%{pnts: 67}], [%{pnts: 85}]}}
     assert Round.get_player_final_scores(round) == [0, 3]
   end
 
@@ -146,8 +142,8 @@ defmodule RoundTest do
 
     # if player doesn't have requested suit and has trump they need to trump
     # add trump card to hand manually to check this
-    new_hand = [%Card{s: "C", r: "J"} | Enum.at(round.p_hands, 0)]
-    round = %Round{round | p_hands: [new_hand, []]}
+    new_hand = [%Card{s: "C", r: "J"} | elem(round.p_hands, 0)]
+    round = %Round{round | p_hands: {new_hand, []}}
     options = Round.get_player_card_options(round)
     assert length(Enum.at(options, 0)) == 1
   end
@@ -163,7 +159,7 @@ defmodule RoundTest do
     assert Enum.all?(premium_options, fn options -> length(options) == 0 end)
 
     # check Q+K premium for 20 pts - modify round hands so player only has that
-    new_hands = [[%Card{r: "Q", s: "S"}, %Card{r: "K", s: "S"}], []]
+    new_hands = {[%Card{r: "Q", s: "S"}, %Card{r: "K", s: "S"}], []}
     round = %Round{round | p_hands: new_hands}
     premium_options = Round.get_player_premium_options(round)
 
@@ -174,13 +170,13 @@ defmodule RoundTest do
     assert Enum.at(Enum.at(player_premiums, 0).cards, 1) == %Card{r: "K", s: "S"}
 
     # check bad Q+K premium - from different suits - should not be registered as a premium
-    new_hands = [[%Card{r: "Q", s: "S"}, %Card{r: "K", s: "D"}], []]
+    new_hands = {[%Card{r: "Q", s: "S"}, %Card{r: "K", s: "D"}], []}
     round = %Round{round | p_hands: new_hands}
     premium_options = Round.get_player_premium_options(round)
     assert length(Enum.at(premium_options, 0)) == 0
 
     # check Q+K premium for 40 pts + multiple premiums + premiums being reported in combos AND sorted suit order
-    new_hands = [
+    new_hands = {
       [
         %Card{r: "K", s: "S"},
         %Card{r: "Q", s: "C"},
@@ -188,7 +184,7 @@ defmodule RoundTest do
         %Card{r: "K", s: "C"}
       ],
       []
-    ]
+    }
 
     round = %Round{round | p_hands: new_hands}
     premium_options = Round.get_player_premium_options(round)
@@ -221,14 +217,14 @@ defmodule RoundTest do
     # test the option to end the game early - give p1 a bunch of premiums to meet the threshold of 66
     round = %Round{
       round
-      | p_premiums: [
+      | p_premiums: {
           [
             %{cards: [%Card{r: "Q", s: "H", pnts: 4}, %Card{r: "K", s: "H", pnts: 5}], pnts: 20},
             %{cards: [%Card{r: "Q", s: "D", pnts: 4}, %Card{r: "K", s: "D", pnts: 5}], pnts: 20},
             %{cards: [%Card{r: "Q", s: "C", pnts: 4}, %Card{r: "K", s: "C", pnts: 5}], pnts: 40}
           ],
           []
-        ]
+        }
     }
 
     other_options = Round.get_player_other_options(round)
@@ -237,7 +233,7 @@ defmodule RoundTest do
 
     # test option to swap out trump card at bottom if player holds 9 of trump
 
-    round = %Round{round | p_hands: [[%Card{r: "9", s: "C"}], []]}
+    round = %Round{round | p_hands: {[%Card{r: "9", s: "C"}], []}}
     other_options = Round.get_player_other_options(round)
     assert Enum.at(other_options, 0) == [:swap_card, :close_deck, :end_round]
     assert length(Enum.at(other_options, 1)) == 0
