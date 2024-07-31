@@ -53,6 +53,48 @@ defmodule Deck do
     end
   end
 
+  # determines if card2 is stronger than card1, assumes card2 was placed after card1
+  def is_stronger(card1, card2, trump_suit) do
+    # if both cards are of same suit need to perform full checks
+    if card1.s == card2.s do
+      card1_index = index_of(@valid_ranks, card1.r)
+      card2_index = index_of(@valid_ranks, card2.r)
+
+      cond do
+        card1_index < card2_index -> true
+        card1_index > card2_index -> false
+        card1_index == card2_index -> {:error, "Duplicate cards"}
+      end
+    else
+      # check if either player is trumping
+      if card1.s == trump_suit or card2.s == trump_suit do
+        cond do
+          card1.s == trump_suit and card2.s != trump_suit -> false
+          card1.s != trump_suit and card2.s == trump_suit -> true
+        end
+      else
+        # if no one is trumping and player2 did not respond to player1 then p1 wins
+        false
+      end
+    end
+  end
+
+  # wrapper for is_stronger that allows for setting which player (0 or 1) played first
+  def is_stronger_with_first(cards_list, p_started, t_suit)
+      when p_started >= 0 and p_started <= 1 do
+    cards_list =
+      cond do
+        p_started == 0 -> cards_list
+        p_started == 1 -> Enum.reverse(cards_list)
+      end
+
+    is_stronger(
+      Enum.at(cards_list, 0),
+      Enum.at(cards_list, 1),
+      t_suit
+    )
+  end
+
   # Use sort_by to build a tuple and sort it naturally
   def sort_cards(cards) do
     Enum.sort_by(cards, fn card -> {@suit_weights[card.s], @rank_weights[card.r]} end)

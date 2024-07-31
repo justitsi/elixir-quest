@@ -134,6 +134,28 @@ defmodule DeckTest do
     assert Deck.index_of(to_test, 20) == nil
   end
 
+  test "[is_stronger] correctly compares card strengths" do
+    # check cards from same suit
+    assert Deck.is_stronger(%Card{r: "9", s: "H"}, %Card{r: "J", s: "H"}, "S") == true
+    # check cards from same *trump* suit
+    assert Deck.is_stronger(%Card{r: "A", s: "S"}, %Card{r: "K", s: "S"}, "S") == false
+
+    # check trumping
+    assert Deck.is_stronger(%Card{r: "9", s: "H"}, %Card{r: "J", s: "D"}, "H") == false
+    assert Deck.is_stronger(%Card{r: "9", s: "D"}, %Card{r: "J", s: "H"}, "H") == true
+
+    # check not responding
+    assert Deck.is_stronger(%Card{r: "9", s: "S"}, %Card{r: "A", s: "D"}, "H") == false
+  end
+
+  test "[is_stronger_with_first] correctly re-orders cards for is_stronger" do
+    assert Deck.is_stronger_with_first([%Card{r: "9", s: "H"}, %Card{r: "J", s: "H"}], 0, "S") ==
+             true
+
+    assert Deck.is_stronger_with_first([%Card{r: "9", s: "H"}, %Card{r: "J", s: "H"}], 1, "S") ==
+             false
+  end
+
   test "[sort_cards] check provided cards are sorted correctly" do
     deck = Deck.new() |> Deck.shuffle()
 
