@@ -25,8 +25,7 @@ defmodule Round do
         starting_p_index == 1 -> Enum.reverse(p_hands)
         starting_p_index == 0 -> p_hands
       end
-
-    p_hands = List.to_tuple(p_hands)
+      |> List.to_tuple()
 
     %Round{
       p_hands: p_hands,
@@ -178,12 +177,7 @@ defmodule Round do
         elem(round.p_hands, p_index)
         |> Enum.filter(fn hand_card -> hand_card != card end)
 
-      new_p_hands =
-        cond do
-          p_index == 0 -> {new_p_hand, elem(round.p_hands, 1)}
-          p_index == 1 -> {elem(round.p_hands, 0), new_p_hand}
-        end
-
+      new_p_hands = put_elem(round.p_hands, p_index, new_p_hand)
       new_placed_cards = List.replace_at(round.placed_cards, p_index, card)
       # return updated round data
       %Round{round | placed_cards: new_placed_cards, p_hands: new_p_hands}
@@ -199,15 +193,11 @@ defmodule Round do
       |> Enum.find(fn premium -> premium == move_data end)
 
     if premium != nil do
-      # add premium to player premiums and return updated round info
-      new_p_premium = [premium | elem(round.p_premiums, p_index)]
-
+      # add premium to player premiums
       new_p_premiums =
-        cond do
-          p_index == 0 -> {new_p_premium, elem(round.p_premiums, 1)}
-          p_index == 1 -> {elem(round.p_premiums, 0), new_p_premium}
-        end
+        put_elem(round.p_premiums, p_index, [premium | elem(round.p_premiums, p_index)])
 
+      # return updated round info
       %Round{round | p_premiums: new_p_premiums}
     else
       {:error, "Player cannot announce this premium"}
@@ -252,13 +242,7 @@ defmodule Round do
           hand_card.r != "9" and hand_card.s != round.trump_suit
         end)
 
-      new_p_hand = [last_deck_card | new_p_hand]
-
-      new_p_hands =
-        cond do
-          p_index == 0 -> {new_p_hand, elem(round.p_hands, 1)}
-          p_index == 1 -> {elem(round.p_hands, 0), new_p_hand}
-        end
+      new_p_hands = put_elem(round.p_hands, p_index, [last_deck_card | new_p_hand])
 
       # now place a new 9 of trumps at end of round.deck.cards
       new_deck_cards =
