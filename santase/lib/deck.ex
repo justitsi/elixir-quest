@@ -81,16 +81,10 @@ defmodule Deck do
 
   # wrapper for is_stronger that allows for setting which player (0 or 1) played first
   def is_stronger_with_first(cards_list, p_started, t_suit)
-      when p_started >= 0 and p_started <= 1 do
-    cards_list =
-      cond do
-        p_started == 0 -> cards_list
-        p_started == 1 -> Enum.reverse(cards_list)
-      end
-
+      when p_started == 0 or p_started == 1 do
     is_stronger(
-      Enum.at(cards_list, 0),
-      Enum.at(cards_list, 1),
+      Enum.at(cards_list, rem(p_started, 2)),
+      Enum.at(cards_list, rem(p_started + 1, 2)),
       t_suit
     )
   end

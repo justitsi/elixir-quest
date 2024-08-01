@@ -200,6 +200,17 @@ defmodule RoundTest do
 
     assert Enum.at(Enum.at(player_premiums, 1).cards, 0) == %Card{r: "Q", s: "S"}
     assert Enum.at(Enum.at(player_premiums, 1).cards, 1) == %Card{r: "K", s: "S"}
+
+    # check player cannot re-announce already announced premiums
+    round = %Round{round | p_premiums: {[Enum.at(player_premiums, 0)], []}}
+    premium_options = Round.get_player_premium_options(round)
+    player_premiums = Enum.at(premium_options, 0)
+
+    # player can only announce second premium from before as first has been registered to them
+    assert length(player_premiums) == 1
+    assert Enum.at(player_premiums, 0).pnts == 20
+    assert Enum.at(Enum.at(player_premiums, 0).cards, 0) == %Card{r: "Q", s: "S"}
+    assert Enum.at(Enum.at(player_premiums, 0).cards, 1) == %Card{r: "K", s: "S"}
   end
 
   test "[get_player_other_options] round gets player options correctly" do
@@ -237,5 +248,178 @@ defmodule RoundTest do
     other_options = Round.get_player_other_options(round)
     assert Enum.at(other_options, 0) == [:swap_card, :close_deck, :end_round]
     assert length(Enum.at(other_options, 1)) == 0
+  end
+
+  test "[perform_player_move] check players placing cards" do
+    round = Round.new(Deck.new(), 0)
+
+    # check error handling
+    assert Round.perform_player_move(round, 1, nil, nil) == {:error, "Player does not have turn"}
+
+    assert Round.perform_player_move(round, 0, :test, nil) ==
+             {:error,
+              "Move type unknown, known types are :card_play, :premium_play and :other_play"}
+
+    # check playing card correctly for both players
+    Enum.each(0..1, fn p_index ->
+      round_tmp = %Round{round | p_turn: p_index}
+
+      card_to_play = Enum.at(elem(round_tmp.p_hands, p_index), 0)
+      updated_round = Round.perform_player_move(round_tmp, p_index, :card_play, card_to_play)
+      assert Enum.at(updated_round.placed_cards, p_index) == card_to_play
+      assert length(elem(updated_round.p_hands, p_index)) == 5
+
+      # check card removed from hand
+      assert Enum.any?(elem(updated_round.p_hands, p_index), fn card -> card == card_to_play end) ==
+               false
+    end)
+
+    # check player playing card they can't play
+    result = Round.perform_player_move(round, 0, :card_play, %Card{r: "A", s: "C"})
+    assert result == {:error, "Player cannot place this card"}
+  end
+
+  test "[perform_player_move] check players announcing premiums" do
+    round = Round.new(Deck.new(), 0)
+
+    hands_to_check = [
+      [
+        %Card{r: "Q", s: "S"},
+        %Card{r: "K", s: "S"},
+        %Card{r: "Q", s: "C"},
+        %Card{r: "K", s: "C"},
+        %Card{r: "Q", s: "H"},
+        %Card{r: "K", s: "H"}
+      ],
+      [
+        %Card{r: "Q", s: "S"},
+        %Card{r: "K", s: "S"}
+      ],
+      [
+        %Card{r: "Q", s: "S"},
+        %Card{r: "K", s: "C"},
+        %Card{r: "K", s: "S"},
+        %Card{r: "Q", s: "C"}
+      ]
+    ]
+
+    Enum.each(hands_to_check, fn new_hand ->
+      Enum.each(0..1, fn p_index ->
+        round_tmp =
+          cond do
+            p_index == 0 -> %Round{round | p_turn: p_index, p_hands: {new_hand, []}}
+            p_index == 1 -> %Round{round | p_turn: p_index, p_hands: {[], new_hand}}
+          end
+
+        premiums_to_play = Round.get_player_premium_options(round_tmp) |> Enum.at(p_index)
+        assert length(premiums_to_play) == length(new_hand) / 2
+
+        # play all premiums for users
+        updated_round =
+          Enum.reduce(premiums_to_play, round_tmp, fn premium, updated_round ->
+            Round.perform_player_move(updated_round, p_index, :premium_play, premium)
+          end)
+
+        assert elem(updated_round.p_premiums, p_index) == Enum.reverse(premiums_to_play)
+      end)
+    end)
+
+    # check player announcing premium they can't play
+    result =
+      Round.perform_player_move(round, 0, :premium_play, %{
+        cards: [%Card{r: "Q", s: "S", pnts: nil}, %Card{r: "K", s: "S", pnts: nil}],
+        pnts: 20
+      })
+
+    assert result == {:error, "Player cannot announce this premium"}
+  end
+
+  test "[perform_player_move] check players announcing other options" do
+    # check both players can close deck
+    Enum.each(0..1, fn p_index ->
+      round = Round.new(Deck.new(), p_index)
+      updated_round = Round.perform_player_move(round, p_index, :other_play, :close_deck)
+      assert updated_round.deck_closed == true
+      assert updated_round.deck_closer == p_index
+
+      # check players can't close deck if there are fewer <= 2 cards left in round deck
+      round = %Round{
+        round
+        | deck: %Deck{cards: [%Card{r: "9", s: "D", pnts: 0}, %Card{r: "9", s: "H", pnts: 0}]}
+      }
+
+      updated_round = Round.perform_player_move(round, p_index, :other_play, :close_deck)
+      assert updated_round == {:error, "Player cannot announce this game option"}
+
+      round = %Round{round | deck: %Deck{cards: []}}
+      updated_round = Round.perform_player_move(round, p_index, :other_play, :close_deck)
+      assert updated_round == {:error, "Player cannot announce this game option"}
+    end)
+
+    # helper func to shuffle deck until last card is not 9
+    deck_shuffle = fn deck, self ->
+      if Enum.at(deck.cards, -1).r == "9" do
+        self.(Deck.shuffle(deck), self)
+      else
+        deck
+      end
+    end
+
+    # check both players swap out last card
+    Enum.each(0..1, fn p_index ->
+      round = Round.new(Deck.new(), p_index)
+
+      # check current player does not have 9 of trumps
+      assert Enum.any?(elem(round.p_hands, p_index), fn card ->
+               card.r == "9" and card.s == round.trump_suit
+             end) == false
+
+      # check error handling when player does not have 9 of trumps for :swap_card action
+      updated_round = Round.perform_player_move(round, p_index, :other_play, :swap_card)
+      assert updated_round == {:error, "Player cannot announce this game option"}
+
+      # now create new round with shuffled deck and give player 9 of trumps
+      round = Round.new(Deck.new() |> deck_shuffle.(deck_shuffle), p_index)
+      new_hand = [%Card{r: "9", s: round.trump_suit}]
+
+      round =
+        cond do
+          p_index == 0 -> %Round{round | p_hands: {new_hand, []}}
+          p_index == 1 -> %Round{round | p_hands: {[], new_hand}}
+        end
+
+      current_last_card = Enum.at(round.deck.cards, -1)
+      assert current_last_card.r != "9"
+
+      # perform swapping of 9 of trumps for trump card at the bottom of the deck
+      updated_round = Round.perform_player_move(round, p_index, :other_play, :swap_card)
+
+      assert Enum.at(updated_round.deck.cards, -1) == %Card{r: "9", s: round.trump_suit, pnts: 0}
+
+      assert Enum.any?(elem(updated_round.p_hands, p_index), fn card ->
+               card == current_last_card
+             end)
+    end)
+
+    # check both players can end round early
+    Enum.each(0..1, fn p_index ->
+      round = Round.new(Deck.new(), p_index)
+
+      # players should not be able to end the game in the start
+      updated_round = Round.perform_player_move(round, p_index, :other_play, :end_round)
+      assert updated_round == {:error, "Player cannot announce this game option"}
+
+      # give 66+ points to player with premiums
+      new_premiums = [%{pnts: 40}, %{pnts: 20}, %{pnts: 20}]
+      round =
+        cond do
+          p_index == 0 -> %Round{round | p_premiums: {new_premiums, []}}
+          p_index == 1 -> %Round{round | p_premiums: {[], new_premiums}}
+        end
+
+      updated_round = Round.perform_player_move(round, p_index, :other_play, :end_round)
+      assert updated_round.winner == p_index
+      assert updated_round.p_turn == -1
+    end)
   end
 end
