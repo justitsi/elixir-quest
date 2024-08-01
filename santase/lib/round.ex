@@ -161,125 +161,134 @@ defmodule Round do
     end
   end
 
-  # this function checks if player move is legal and performs it
+  # perform_player_move checks if player move is legal and performs it
   # it does not tick-over round state in response to player actions
-  def perform_player_move(round, p_index, move_type, move_data) do
-    if p_index != round.p_turn do
-      {:error, "Player does not have turn"}
+  def perform_player_move(round, p_index, _, _) when p_index != round.p_turn do
+    {:error, "Player does not have turn"}
+  end
+
+  def perform_player_move(round, p_index, move_type, move_data) when move_type == :card_play do
+    card =
+      Enum.at(get_player_card_options(round), p_index)
+      |> Enum.find(fn card -> card.s == move_data.s and card.r == move_data.r end)
+
+    if card != nil do
+      # need to remove card and place it on table
+      new_p_hand =
+        elem(round.p_hands, p_index)
+        |> Enum.filter(fn hand_card -> hand_card != card end)
+
+      new_p_hands =
+        cond do
+          p_index == 0 -> {new_p_hand, elem(round.p_hands, 1)}
+          p_index == 1 -> {elem(round.p_hands, 0), new_p_hand}
+        end
+
+      new_placed_cards = List.replace_at(round.placed_cards, p_index, card)
+      # return updated round data
+      %Round{round | placed_cards: new_placed_cards, p_hands: new_p_hands}
     else
-      if move_type == :card_play do
-        card =
-          Enum.at(get_player_card_options(round), p_index)
-          |> Enum.find(fn card -> card.s == move_data.s and card.r == move_data.r end)
-
-        if card != nil do
-          # need to remove card and place it on table
-          new_p_hand =
-            elem(round.p_hands, p_index)
-            |> Enum.filter(fn hand_card -> hand_card != card end)
-
-          new_p_hands =
-            cond do
-              p_index == 0 -> {new_p_hand, elem(round.p_hands, 1)}
-              p_index == 1 -> {elem(round.p_hands, 0), new_p_hand}
-            end
-
-          new_placed_cards = List.replace_at(round.placed_cards, p_index, card)
-          # return updated round data
-          %Round{round | placed_cards: new_placed_cards, p_hands: new_p_hands}
-        else
-          {:error, "Player cannot place this card"}
-        end
-      else
-        if move_type == :premium_play do
-          # need to check premium is available to play
-          premium =
-            Enum.at(get_player_premium_options(round), p_index)
-            |> Enum.find(fn premium -> premium == move_data end)
-
-          if premium != nil do
-            # add premium to player premiums and return updated round info
-            new_p_premium = [premium | elem(round.p_premiums, p_index)]
-
-            new_p_premiums =
-              cond do
-                p_index == 0 -> {new_p_premium, elem(round.p_premiums, 1)}
-                p_index == 1 -> {elem(round.p_premiums, 0), new_p_premium}
-              end
-
-            %Round{round | p_premiums: new_p_premiums}
-          else
-            {:error, "Player cannot announce this premium"}
-          end
-        else
-          if move_type == :other_play do
-            # need to check premium is available to play
-            option =
-              Enum.at(get_player_other_options(round), p_index)
-              |> Enum.find(fn option -> option == move_data end)
-
-            if option != nil do
-              round =
-                if option == :close_deck do
-                  %Round{round | deck_closed: true, deck_closer: p_index}
-                else
-                  round
-                end
-
-              round =
-                if option == :swap_card do
-                  # get deck last card
-                  last_deck_card = Enum.at(round.deck.cards, -1)
-
-                  # delete 9 trumps from player's hand and add last_deck_card in its place
-                  new_p_hand =
-                    elem(round.p_hands, p_index)
-                    |> Enum.filter(fn hand_card ->
-                      hand_card.r != "9" and hand_card.s != round.trump_suit
-                    end)
-
-                  new_p_hand = [last_deck_card | new_p_hand]
-
-                  new_p_hands =
-                    cond do
-                      p_index == 0 -> {new_p_hand, elem(round.p_hands, 1)}
-                      p_index == 1 -> {elem(round.p_hands, 0), new_p_hand}
-                    end
-
-                  # now place a new 9 of trumps at end of round.deck.cards
-                  new_deck_cards =
-                    List.replace_at(round.deck.cards, -1, %Card{
-                      r: "9",
-                      s: round.trump_suit,
-                      pnts: 0
-                    })
-
-                  new_deck = %Deck{round.deck | cards: new_deck_cards}
-
-                  %Round{round | deck: new_deck, p_hands: new_p_hands}
-                else
-                  round
-                end
-
-              round =
-                if option == :end_round do
-                  %Round{round | winner: p_index, p_turn: -1}
-                else
-                  round
-                end
-
-              round
-            else
-              {:error, "Player cannot announce this game option"}
-            end
-          else
-            {:error,
-             "Move type unknown, known types are :card_play, :premium_play and :other_play"}
-          end
-        end
-      end
+      {:error, "Player cannot place this card"}
     end
   end
+
+  def perform_player_move(round, p_index, move_type, move_data) when move_type == :premium_play do
+    # need to check premium is available to play
+    premium =
+      Enum.at(get_player_premium_options(round), p_index)
+      |> Enum.find(fn premium -> premium == move_data end)
+
+    if premium != nil do
+      # add premium to player premiums and return updated round info
+      new_p_premium = [premium | elem(round.p_premiums, p_index)]
+
+      new_p_premiums =
+        cond do
+          p_index == 0 -> {new_p_premium, elem(round.p_premiums, 1)}
+          p_index == 1 -> {elem(round.p_premiums, 0), new_p_premium}
+        end
+
+      %Round{round | p_premiums: new_p_premiums}
+    else
+      {:error, "Player cannot announce this premium"}
+    end
+  end
+
+  # perform_player_move for :other_play moves - :close_deck
+  def perform_player_move(round, p_index, move_type, move_data)
+      when move_type == :other_play and move_data == :close_deck do
+    # need to check premium is available to play
+    option =
+      Enum.at(get_player_other_options(round), p_index)
+      |> Enum.find(fn option -> option == move_data end)
+
+    if option != nil do
+      %Round{round | deck_closed: true, deck_closer: p_index}
+    else
+      {:error, "Player cannot announce this game option"}
+    end
+  end
+
+  # perform_player_move for :other_play moves - :swap_card
+  def perform_player_move(round, p_index, move_type, move_data)
+      when move_type == :other_play and move_data == :swap_card do
+    # need to check premium is available to play
+    option =
+      Enum.at(get_player_other_options(round), p_index)
+      |> Enum.find(fn option -> option == move_data end)
+
+    if option != nil do
+      # get deck last card
+      last_deck_card = Enum.at(round.deck.cards, -1)
+
+      # delete 9 trumps from player's hand and add last_deck_card in its place
+      new_p_hand =
+        elem(round.p_hands, p_index)
+        |> Enum.filter(fn hand_card ->
+          hand_card.r != "9" and hand_card.s != round.trump_suit
+        end)
+
+      new_p_hand = [last_deck_card | new_p_hand]
+
+      new_p_hands =
+        cond do
+          p_index == 0 -> {new_p_hand, elem(round.p_hands, 1)}
+          p_index == 1 -> {elem(round.p_hands, 0), new_p_hand}
+        end
+
+      # now place a new 9 of trumps at end of round.deck.cards
+      new_deck_cards =
+        List.replace_at(round.deck.cards, -1, %Card{
+          r: "9",
+          s: round.trump_suit,
+          pnts: 0
+        })
+
+      new_deck = %Deck{round.deck | cards: new_deck_cards}
+
+      %Round{round | deck: new_deck, p_hands: new_p_hands}
+    else
+      {:error, "Player cannot announce this game option"}
+    end
+  end
+
+  # perform_player_move for :other_play moves - :end_round
+  def perform_player_move(round, p_index, move_type, move_data)
+      when move_type == :other_play and move_data == :end_round do
+    # need to check premium is available to play
+    option =
+      Enum.at(get_player_other_options(round), p_index)
+      |> Enum.find(fn option -> option == move_data end)
+
+    if option != nil do
+      %Round{round | winner: p_index, p_turn: -1}
+    else
+      {:error, "Player cannot announce this game option"}
+    end
+  end
+
+  def perform_player_move(_, _, _, _),
+    do: {:error, "Move type unknown, known types are :card_play, :premium_play and :other_play"}
 
   def get_player_scores(round) do
     Enum.map(Enum.to_list(0..1), fn p_index ->
