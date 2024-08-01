@@ -170,10 +170,10 @@ defmodule Round do
   def perform_player_move(round, p_index, move_type, move_data) when move_type == :card_play do
     card =
       Enum.at(get_player_card_options(round), p_index)
-      |> Enum.find(fn card -> card.s == move_data.s and card.r == move_data.r end)
+      |> Enum.find(fn card -> card == move_data end)
 
     if card != nil do
-      # need to remove card and place it on table
+      # remove card and place it on table
       new_p_hand =
         elem(round.p_hands, p_index)
         |> Enum.filter(fn hand_card -> hand_card != card end)
@@ -217,25 +217,29 @@ defmodule Round do
   # perform_player_move for :other_play moves - :close_deck
   def perform_player_move(round, p_index, move_type, move_data)
       when move_type == :other_play and move_data == :close_deck do
-    # need to check premium is available to play
-    option =
-      Enum.at(get_player_other_options(round), p_index)
-      |> Enum.find(fn option -> option == move_data end)
+    option = get_player_other_options(round, p_index, move_data)
 
-    if option != nil do
-      %Round{round | deck_closed: true, deck_closer: p_index}
-    else
-      {:error, "Player cannot announce this game option"}
+    cond do
+      option != nil -> %Round{round | deck_closed: true, deck_closer: p_index}
+      option == nil -> {:error, "Player cannot announce this game option"}
+    end
+  end
+
+  # perform_player_move for :other_play moves - :end_round
+  def perform_player_move(round, p_index, move_type, move_data)
+      when move_type == :other_play and move_data == :end_round do
+    option = get_player_other_options(round, p_index, move_data)
+
+    cond do
+      option != nil -> %Round{round | winner: p_index, p_turn: -1}
+      option == nil -> {:error, "Player cannot announce this game option"}
     end
   end
 
   # perform_player_move for :other_play moves - :swap_card
   def perform_player_move(round, p_index, move_type, move_data)
       when move_type == :other_play and move_data == :swap_card do
-    # need to check premium is available to play
-    option =
-      Enum.at(get_player_other_options(round), p_index)
-      |> Enum.find(fn option -> option == move_data end)
+    option = get_player_other_options(round, p_index, move_data)
 
     if option != nil do
       # get deck last card
@@ -272,23 +276,14 @@ defmodule Round do
     end
   end
 
-  # perform_player_move for :other_play moves - :end_round
-  def perform_player_move(round, p_index, move_type, move_data)
-      when move_type == :other_play and move_data == :end_round do
-    # need to check premium is available to play
-    option =
-      Enum.at(get_player_other_options(round), p_index)
-      |> Enum.find(fn option -> option == move_data end)
-
-    if option != nil do
-      %Round{round | winner: p_index, p_turn: -1}
-    else
-      {:error, "Player cannot announce this game option"}
-    end
-  end
-
   def perform_player_move(_, _, _, _),
     do: {:error, "Move type unknown, known types are :card_play, :premium_play and :other_play"}
+
+  # helper function for perform_player_move when using :other_play
+  def get_player_other_options(round, p_index, target) do
+    Enum.at(get_player_other_options(round), p_index)
+    |> Enum.find(fn option -> option == target end)
+  end
 
   def get_player_scores(round) do
     Enum.map(Enum.to_list(0..1), fn p_index ->
